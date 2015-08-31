@@ -1,0 +1,10 @@
+{
+  "name": "EventList",
+  "version": "1.0.0",
+  "description": "Event Todo List",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "bower": "1.5.2"
+  }
+}
