@@ -312,94 +312,33 @@ angular.module('SysTodoList.controllers', [
             });
             $scope.$apply();
         };
-        
-        var setDoneFlag = function(JobNo,JobLineItemNo,LineItemNo,DoneDateTime,blnRefresh){
-			$ionicLoading.show();
-            var jsonData = { "JobNo":JobNo,"JobLineItemNo":JobLineItemNo,"LineItemNo":LineItemNo,"DoneFlag":"Y","DoneDatetime":DoneDateTime,"Remark":''};
-            var strUri = "/api/event/action/update/done";
-            var strKey = hex_md5(strBaseUrl + strUri + strSecretKey.replace(/-/ig,""));
-            $http({
-                method: 'POST',
-                url:    strWebServiceURL + strBaseUrl + strUri,
-                data:   jsonData,
-                headers: {
-                    "Signature": strKey
-                }
-            }).success(function (data) {
-                if (data.meta.code == 200) {
-                    if(blnRefresh){
-                        getTasks();
-                    }
-                } else {
-                    $ionicLoading.hide();
-					var alertPopup = $ionicPopup.alert({
-						title: 'Update Event Status Failed.',
-						okType: 'button-assertive'
-					});
-					$timeout(function() {
-						alertPopup.close();
-					}, 2500);
-                }
-            }).error(function (data) {
-                $ionicLoading.hide();
-				var alertPopup = $ionicPopup.alert({
-					title: 'Connect to WebService failed.',
-					okType: 'button-assertive'
-				});
-				$timeout(function() {
-					alertPopup.close();
-				}, 2500);
-            });
-        }
 
         $scope.returnMain = function () {
             $state.go('main', { 'blnForcedReturn':'Y' }, {reload: true});
         };
-		     
+
+        var checkEventOrder = function (task) {
+            for (var i = 0; i <= $scope.tasks.length - 1; i++) {
+                if ($scope.tasks[i].JobLineItemNo < task.JobLineItemNo && $scope.tasks[i].AllowSkipFlag != 'Y') {
+                    return false;
+                }
+            }
+            return true;
+        };
+
         $scope.slideDone = function (task) {
-            //
-            $state.go('detail',{'ContainerNo':task.ContainerNo,'JobNo':task.JobNo,'JobLineItemNo':task.JobLineItemNo,'LineItemNo':task.LineItemNo,'Description':task.Description,'Remark':task.Remark});
+            if (checkEventOrder(task)) {
+                $state.go('detail', { 'ContainerNo': task.ContainerNo, 'JobNo': task.JobNo, 'JobLineItemNo': task.JobLineItemNo, 'LineItemNo': task.LineItemNo, 'Description': task.Description, 'Remark': task.Remark });
+            } else {
+                var alertPopup = $ionicPopup.alert({
+                    title: 'Previous event not Done.<br/>Not allow to do this one.',
+                    okType: 'button-assertive'
+                });
+                $timeout(function () {
+                    alertPopup.close();
+                }, 2500);
+            }
             /*
-            $scope.Update = {};
-            var myDate = new Date();
-            $scope.Update.date = myDate;
-            $scope.Update.time = myDate;
-            var myPopup = $ionicPopup.show({
-                template: 'Date:<input type="date" ng-model="Update.date">Time:<input type="time" ng-model="Update.time">',
-                title: '<h4>Task<br/>"' + task.Description + '"<br/>Completed ?</h4>',
-                subTitle: 'Please chose complete datetime.',
-                scope: $scope,
-                buttons: [
-                  {
-                    text: 'Done',
-                    type: 'button-positive',
-                    onTap: function(e) {
-                        myDate.setFullYear($scope.Update.date.getFullYear());
-                        myDate.setMonth($scope.Update.date.getMonth());
-                        myDate.setDate($scope.Update.date.getDate());
-                        myDate.setHours($scope.Update.time.getHours());
-                        myDate.setMinutes($scope.Update.time.getMinutes());
-                        setDoneFlag(task.JobNo, task.JobLineItemNo, task.LineItemNo, myDate, false);
-                        $scope.tasks.splice($scope.tasks.indexOf(task), 1);
-                        if($scope.tasks.length<1){
-                            var alertPopup = $ionicPopup.alert({
-                                title: 'No Tasks.',
-                                okType: 'button-calm'
-                            });
-                            $timeout(function() {
-                                alertPopup.close();
-                            }, 2500);
-                        }
-                        myPopup.close();
-                    }
-                  },
-                  { text: 'Cancel' }
-                ]
-            });
-            $timeout(function() {
-                myPopup.close();
-            }, 15000);
-            
             var hideSheet = $ionicActionSheet.show({
                 titleText: ' <H4>Task "' + task.Description + '" Completed ?</H4>',
                 destructiveText: '<i class="icon ion-android-done calm"></i>  Done',
@@ -429,7 +368,47 @@ angular.module('SysTodoList.controllers', [
             }, 4500);
             */
         };
-        
+        /*
+        var setDoneFlag = function(JobNo,JobLineItemNo,LineItemNo,DoneDateTime,blnRefresh){
+            $ionicLoading.show();
+            var jsonData = { "JobNo":JobNo,"JobLineItemNo":JobLineItemNo,"LineItemNo":LineItemNo,"DoneFlag":"Y","DoneDatetime":DoneDateTime,"Remark":''};
+            var strUri = "/api/event/action/update/done";
+            var strKey = hex_md5(strBaseUrl + strUri + strSecretKey.replace(/-/ig,""));
+            $http({
+                method: 'POST',
+                url:    strWebServiceURL + strBaseUrl + strUri,
+                data:   jsonData,
+                headers: {
+                    "Signature": strKey
+                }
+            }).success(function (data) {
+                if (data.meta.code == 200) {
+                    if(blnRefresh){
+                        getTasks();
+                    }
+                } else {
+                    $ionicLoading.hide();
+                    var alertPopup = $ionicPopup.alert({
+                        title: 'Update Event Status Failed.',
+                        okType: 'button-assertive'
+                    });
+                    $timeout(function() {
+                        alertPopup.close();
+                    }, 2500);
+                }
+            }).error(function (data) {
+                $ionicLoading.hide();
+                var alertPopup = $ionicPopup.alert({
+                    title: 'Connect to WebService failed.',
+                    okType: 'button-assertive'
+                });
+                $timeout(function() {
+                    alertPopup.close();
+                }, 2500);
+            });
+        }
+        */
+        /*
         $scope.showDetail = function(task){
             var JobNoContainerNo = 
             navigator.notification.confirm('Task "' + task.Description + '" Completed ?', function(buttonIndex){
@@ -438,28 +417,11 @@ angular.module('SysTodoList.controllers', [
                 }
             }, task.ContainerNo, ['Done','Cancel']);
         };
-
-        var intJobLineItemNo = -1;
-        $scope.checkEventOrder = function (task) {
-            if (intJobLineItemNo != task.JobLineItemNo) {
-                intJobLineItemNo = task.JobLineItemNo;
-                return false;
-            } else {
-                return true;
-            }
-            //$scope.tasks
-            /*
-            var alertPopup = $ionicPopup.alert({
-                title: 'Update Event Status Failed.',
-                okType: 'button-assertive'
-            });
-            */
-        };
-
+        */
         getTasks();
     })
     
-    .controller('DetailCtrl', function($scope, $stateParams, $state, $http, $ionicLoading, $cordovaDatePicker) {
+    .controller('DetailCtrl', function ($scope, $stateParams, $state, $http, $timeout, $ionicLoading, $ionicPopup, $cordovaDatePicker) {
         $scope.strContainerNo = $stateParams.ContainerNo;
         $scope.strJobNo = $stateParams.JobNo;
         $scope.strJobLineItemNo = $stateParams.JobLineItemNo;
