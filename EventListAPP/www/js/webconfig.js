@@ -1,11 +1,11 @@
-/* SysFreight Server */
+/* SysFreight Server
 var strBaseUrl = "TmsWS";
 var strWebServiceURL = "www.sysfreight.net:8081";
-
-/* Local Server 
+ */
+/* Local Server */
 var strBaseUrl = "TmsWS";
 var strWebServiceURL = "192.168.0.55";
-*/
+
 /* Local Test
 var strBaseUrl = "";
 var strWebServiceURL = "192.168.0.55:1656";

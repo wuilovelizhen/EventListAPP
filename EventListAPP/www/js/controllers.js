@@ -439,6 +439,23 @@ angular.module('SysTodoList.controllers', [
             }, task.ContainerNo, ['Done','Cancel']);
         };
 
+        var intJobLineItemNo = -1;
+        $scope.checkEventOrder = function (task) {
+            if (intJobLineItemNo != task.JobLineItemNo) {
+                intJobLineItemNo = task.JobLineItemNo;
+                return false;
+            } else {
+                return true;
+            }
+            //$scope.tasks
+            /*
+            var alertPopup = $ionicPopup.alert({
+                title: 'Update Event Status Failed.',
+                okType: 'button-assertive'
+            });
+            */
+        };
+
         getTasks();
     })
     

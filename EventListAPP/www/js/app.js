@@ -73,7 +73,13 @@ angular.module('SysTodoList', [
                             });
                     });
             });
-        //
+    } else {
+        if (strBaseUrl.length > 0) {
+            strBaseUrl = "/" + strBaseUrl;
+        }
+        if (strWebServiceURL.length > 0) {
+            strWebServiceURL = "http://" + strWebServiceURL;
+        }
     }
     if(window.StatusBar) {
         // org.apache.cordova.statusbar required
