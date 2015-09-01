@@ -448,8 +448,8 @@ angular.module('SysTodoList.controllers', [
             $scope.strDescription = $stateParams.Description;
             $scope.Update = {};
             $scope.Update.remark = $stateParams.Remark;
-            var strDoneFlag = $stateParams.DoneFlag;
-            if (strDoneFlag === 'N') {
+            $scope.strDoneFlag = $stateParams.DoneFlag;
+            if ($scope.strDoneFlag === 'N') {
                 $scope.strDoneOrUpdateTitle = 'Update Remark';
                 $scope.strDoneOrUpdate = 'Update';
             } else {
@@ -470,7 +470,7 @@ angular.module('SysTodoList.controllers', [
                 currentDate.setDate($scope.Update.datetime.getDate());
                 currentDate.setHours($scope.Update.datetime.getHours());
                 currentDate.setMinutes($scope.Update.datetime.getMinutes());
-                var jsonData = { "JobNo": $scope.strJobNo, "JobLineItemNo": $scope.strJobLineItemNo, "LineItemNo": $scope.strLineItemNo, "DoneFlag": strDoneFlag, "DoneDatetime": currentDate, "Remark": $scope.Update.remark };
+                var jsonData = { "JobNo": $scope.strJobNo, "JobLineItemNo": $scope.strJobLineItemNo, "LineItemNo": $scope.strLineItemNo, "DoneFlag": $scope.strDoneFlag, "DoneDatetime": currentDate, "Remark": $scope.Update.remark };
                 var strUri = "/api/event/action/update/done";
                 var strKey = hex_md5(strBaseUrl + strUri + strSecretKey.replace(/-/ig, ""));
                 $http({
