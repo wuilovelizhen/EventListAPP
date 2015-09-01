@@ -1,7 +1,7 @@
 ﻿<ion-view title="Detail">
 	<ion-header-bar class="bar-positive">
 		<button class="button button-icon icon ion-navicon" ng-click="returnList()"></button>
-		<div class="h1 title" >DETAIL INFOS</div>
+		<div class="h1 title" ng-bind="strDoneOrUpdateTitle"></div>
 	</ion-header-bar>
 	<ion-pane>
 		<div style="margin-top:4em;">
@@ -15,7 +15,7 @@
 						<label class="item item-input item-stacked-label">
 							<i class="icon ion-android-calendar placeholder-icon"></i>
 							<span class="input-label">Completed Time</span>
-							<input type="datetime-local" date-format ng-model="Update.datetime" readonly>
+							<input type="datetime" ng-model="Update.strDatetime" date-Format readonly>
 						</label>
 						<label class="item item-input item-stacked-label">
 							<i class="icon ion-android-document placeholder-icon"></i>
@@ -31,7 +31,7 @@
 	</ion-pane>
 	<ion-footer-bar>
 		<div class="button-bar">
-			<a class="button button-positive" ng-click="update()">Done</a>
+			<a class="button button-positive" ng-click="update()" ng-bind="strDoneOrUpdate"></a>
 			<a class="button button-light" ng-click="returnList()">Cancel</a>
 		</div>
 	</ion-footer-bar>

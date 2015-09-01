@@ -1,13 +1,12 @@
-angular.module('SysTodoList.directives',[])
-.directive('date-format', ['$filter',function($filter) {
+angular.module('SysTodoList.directives', [])
+.directive('dateFormat', ['$filter', function ($filter) {
     var dateFilter = $filter('date');
     return {
         require: 'ngModel',
-        link: function(scope, elm, attrs, ctrl) {
+        link: function (scope, element, attrs,ctrl) {
             function formatter(value) {
-                return dateFilter(value, 'yyyy-MM-dd hh:mm');
+                return dateFilter(value, "yyyy-MM-dd hh:mm");
             }
-
             function parser() {
                 return ctrl.$modelValue;
             }

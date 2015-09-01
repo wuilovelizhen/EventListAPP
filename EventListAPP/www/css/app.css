@@ -50,3 +50,6 @@ html {
 	width:100%;
 	overflow:auto;
 }
+.bar-footer {
+    height:3.2em;
+}
