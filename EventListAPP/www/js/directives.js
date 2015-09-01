@@ -5,7 +5,7 @@ angular.module('SysTodoList.directives', [])
         require: 'ngModel',
         link: function (scope, element, attrs,ctrl) {
             function formatter(value) {
-                return dateFilter(value, "yyyy-MM-dd hh:mm");
+                return dateFilter(value, "yyyy-MM-dd HH:mm");
             }
             function parser() {
                 return ctrl.$modelValue;
