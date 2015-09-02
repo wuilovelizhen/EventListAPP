@@ -41,13 +41,42 @@ angular.module('SysTodoList.controllers', [
                             }
                         });
                     })
-                    .error(function (res) {
-                        //
-                    });
+                    .error(function (res) {});
             }
+
+            $scope.checkUpdate = function () {
+                var url = strWebServiceURL + strBaseUrl + '/update.json';
+                $http.get(url)
+                    .success(function (res) {
+                        var serverAppVersion = res.version;
+                        $cordovaAppVersion.getVersionNumber().then(function (version) {
+                            if (version != serverAppVersion) {
+                                $state.go('update', { 'Version': serverAppVersion });
+                            } else {
+                                var alertPopup = $ionicPopup.alert({
+                                    title: "Already the Latest Version!",
+                                    okType: 'button-assertive'
+                                });
+                                $timeout(function () {
+                                    alertPopup.close();
+                                }, 2500);
+                            }
+                        });
+                    })
+                    .error(function (res) {
+                        var alertPopup = $ionicPopup.alert({
+                            title: "Connect Update Server Error!",
+                            okType: 'button-assertive'
+                        });
+                        $timeout(function () {
+                            alertPopup.close();
+                        }, 2500);
+                    });
+            };
+
             $scope.setConf = function () {
                 $state.go('setting', {}, { reload: true });
-            }
+            };
 
             $scope.login = function () {
                 if (window.cordova && window.cordova.plugins.Keyboard) {
