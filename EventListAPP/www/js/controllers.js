@@ -7,7 +7,8 @@ angular.module('SysTodoList.controllers', [
     'ngCordova.plugins.fileTransfer',
     'ngCordova.plugins.fileOpener2',
     'ngCordova.plugins.datePicker',
-    'SysTodoList.directives'
+    'SysTodoList.directives',
+    'SysTodoList.services'
 ])
 
     .controller('LoadingCtrl',
@@ -19,8 +20,8 @@ angular.module('SysTodoList.controllers', [
         }])
 
     .controller('LoginCtrl',
-        ['$scope', '$http', '$state', '$stateParams', '$ionicPopup', '$timeout', '$ionicLoading', '$cordovaToast', '$cordovaAppVersion',
-        function ($scope, $http, $state, $stateParams, $ionicPopup, $timeout, $ionicLoading, $cordovaToast, $cordovaAppVersion) {
+        ['$scope', '$http', '$state', '$stateParams', '$ionicPopup', '$timeout', '$ionicLoading', '$cordovaToast', '$cordovaAppVersion', 'JsonServiceClient', 
+        function ($scope, $http, $state, $stateParams, $ionicPopup, $timeout, $ionicLoading, $cordovaToast, $cordovaAppVersion, JsonServiceClient) {
             $scope.logininfo = {};
             if (undefined == $scope.logininfo.strPhoneNumber) {
                 $scope.logininfo.strPhoneNumber = "";
@@ -96,40 +97,17 @@ angular.module('SysTodoList.controllers', [
                 var jsonData = { "PhoneNumber": $scope.logininfo.strPhoneNumber };
                 var strUri = "/api/event/action/list/login";
                 var strKey = hex_md5(strBaseUrl + strUri + strSecretKey.replace(/-/ig, ""));
-                $http({
-                    method: 'POST',
-                    url: strWebServiceURL + strBaseUrl + strUri,
-                    data: jsonData,
-                    headers: {
-                        "Signature": strKey
-                    }
-                }).success(function (data) {
+                var onSuccess = function (response) {
                     $ionicLoading.hide();
-                    if (parseInt(data.meta.code) == 200) {
-                        sessionStorage.clear();
-                        sessionStorage.setItem("strPhoneNumber", $scope.logininfo.strPhoneNumber);
-                        sessionStorage.setItem("strDriverName", data.data.results);
-                        $state.go('main', { 'blnForcedReturn': 'N' }, { reload: true });
-                    } else {
-                        var alertPopup = $ionicPopup.alert({
-                            title: data.meta.message,
-                            subTitle: data.meta.errors.message,
-                            okType: 'button-assertive'
-                        });
-                        $timeout(function () {
-                            alertPopup.close();
-                        }, 2500);
-                    }
-                }).error(function (data) {
+                    sessionStorage.clear();
+                    sessionStorage.setItem("strPhoneNumber", $scope.logininfo.strPhoneNumber);
+                    sessionStorage.setItem("strDriverName", response.data.results);
+                    $state.go('main', { 'blnForcedReturn': 'N' }, { reload: true });
+                };
+                var onError = function () {
                     $ionicLoading.hide();
-                    var alertPopup = $ionicPopup.alert({
-                        title: 'Connect to WebService failed.',
-                        okType: 'button-assertive'
-                    });
-                    $timeout(function () {
-                        alertPopup.close();
-                    }, 2500);
-                });
+                };
+                JsonServiceClient.postToService(strUri, jsonData, strKey, onSuccess, onError);
             };
         }])
 
@@ -240,8 +218,8 @@ angular.module('SysTodoList.controllers', [
         }])
 
     .controller('MainCtrl',
-        ['$scope', '$http', '$state', '$stateParams', '$ionicPopup', '$timeout',
-        function ($scope, $http, $state, $stateParams, $ionicPopup, $timeout) {
+        ['$scope', '$http', '$state', '$stateParams', '$ionicPopup', '$timeout', 'JsonServiceClient',
+        function ($scope, $http, $state, $stateParams, $ionicPopup, $timeout, JsonServiceClient) {
             var strDriverName = sessionStorage.getItem("strDriverName");
             var strPhoneNumber = sessionStorage.getItem("strPhoneNumber");
             if (strDriverName === null || strDriverName === "") {
@@ -252,30 +230,23 @@ angular.module('SysTodoList.controllers', [
             $scope.strItemsCount = "loading...";
             var strUri = "/api/event/action/list/jobno/";
             var strKey = hex_md5(strBaseUrl + strUri + strPhoneNumber + "?format=json" + strSecretKey.replace(/-/ig, ""));
-            $http({
-                method: 'GET',
-                url: strWebServiceURL + strBaseUrl + strUri + strPhoneNumber + "?format=json",
-                headers: {
-                    "Signature": strKey
+            var onSuccess = function (response) {
+                if (response.data.results.length === 1 && $stateParams.blnForcedReturn === 'N') {
+                    $state.go('list', { 'JobNo': response.data.results[0].JobNo }, { reload: true });
                 }
-            }).success(function (data) {
-                if (parseInt(data.meta.code) == 200) {
-                    if (data.data.results.length === 1 && $stateParams.blnForcedReturn === 'N') {
-                        $state.go('list', { 'JobNo': data.data.results[0].JobNo }, { reload: true });
-                    }
-                    $scope.Jobs = data.data.results;
-                }
-            }).error(function (data) {
-                //
-            });
+                $scope.Jobs = response.data.results;
+            };
+            var onError = function () {
+            };
+            JsonServiceClient.getFromService(strUri + strPhoneNumber, strKey, onSuccess, onError);
             $scope.showList = function (strJobNo) {
                 $state.go('list', { 'JobNo': strJobNo }, { reload: true });
             };
         }])
 
     .controller('ListCtrl',
-        ['$scope', '$state', '$stateParams', '$http', '$ionicPopup', '$timeout', '$ionicLoading', '$cordovaDialogs',
-        function ($scope, $state, $stateParams, $http, $ionicPopup, $timeout, $ionicLoading, $cordovaDialogs) {
+        ['$scope', '$state', '$stateParams', '$http', '$ionicPopup', '$timeout', '$ionicLoading', '$cordovaDialogs', 'JsonServiceClient',
+        function ($scope, $state, $stateParams, $http, $ionicPopup, $timeout, $ionicLoading, $cordovaDialogs, JsonServiceClient) {
             $scope.shouldShowDelete = false;
             $scope.listCanSwipe = true;
             $scope.JobNo = $stateParams.JobNo;
@@ -283,82 +254,52 @@ angular.module('SysTodoList.controllers', [
             var strJobNo = $scope.JobNo;
             var strUri = "/api/event/action/list/container/";
             var strKey = hex_md5(strBaseUrl + strUri + strPhoneNumber + "/" + strJobNo + "?format=json" + strSecretKey.replace(/-/ig, ""));
+            var onSuccess = function (response) {
+                $ionicLoading.hide();
+                $scope.tasks = response.data.results;
+                if (response.data.results.length == 0) {
+                    var alertPopup = $ionicPopup.alert({
+                        title: 'No Tasks.',
+                        okType: 'button-calm'
+                    });
+                    $timeout(function () {
+                        alertPopup.close();
+                    }, 2500);
+                }
+            };
+            var onError = function () {
+                $ionicLoading.hide();
+            };
+            var onFinally = function () {
+                $scope.$broadcast('scroll.refreshComplete');
+            };
             var getTasks = function () {
                 $ionicLoading.show();
                 getData();
-            }
-            var getData = function () {
-                $http({
-                    method: 'GET',
-                    url: strWebServiceURL + strBaseUrl + strUri + strPhoneNumber + "/" + strJobNo + "?format=json",
-                    headers: {
-                        "Signature": strKey
-                    }
-                }).success(function (data) {
-                    $ionicLoading.hide();
-                    if (data.meta.code == 200) {
-                        $scope.tasks = data.data.results;
-                        if (data.data.results.length == 0) {
-                            var alertPopup = $ionicPopup.alert({
-                                title: 'No Tasks.',
-                                okType: 'button-calm'
-                            });
-                            $timeout(function () {
-                                alertPopup.close();
-                            }, 2500);
-                        }
-                    }
-                }).error(function (data) {
-                    $ionicLoading.hide();
-                    var alertPopup = $ionicPopup.alert({
-                        title: 'Connect to WebService failed.',
-                        okType: 'button-assertive'
-                    });
-                    $timeout(function () {
-                        alertPopup.close();
-                    }, 2500);
-                });
-            }
-
+            };
+            var getData = function () {                
+                JsonServiceClient.getFromService(strUri + strPhoneNumber + "/" + strJobNo, strKey, onSuccess, onError);
+            };
             $scope.doRefresh = function () {
-                $http({
-                    method: 'GET',
-                    url: strWebServiceURL + strBaseUrl + strUri + strPhoneNumber + "/" + strJobNo + "?format=json",
-                    headers: {
-                        "Signature": strKey
-                    }
-                }).success(function (data) {
-                    if (data.meta.code == 200) {
-                        $scope.tasks = data.data.results;
-                        if (data.data.results.length == 0) {
-                            var alertPopup = $ionicPopup.alert({
-                                title: 'No Tasks.',
-                                okType: 'button-calm'
-                            });
-                            $timeout(function () {
-                                alertPopup.close();
-                            }, 2500);
-                        }
-                    }
-                }).error(function (data) {
-                    $ionicLoading.hide();
-                    var alertPopup = $ionicPopup.alert({
-                        title: 'Connect to WebService failed.',
-                        okType: 'button-assertive'
-                    });
-                    $timeout(function () {
-                        alertPopup.close();
-                    }, 2500);
-                }).finally(function () {
-                    $scope.$broadcast('scroll.refreshComplete');
-                });
+                JsonServiceClient.getFromService(strUri + strPhoneNumber + "/" + strJobNo, strKey, onSuccess, onError, onFinally);
                 $scope.$apply();
             };
-
             $scope.returnMain = function () {
                 $state.go('main', { 'blnForcedReturn': 'Y' }, { reload: true });
             };
-
+            $scope.showContainerNo = function (task) {
+                var to = typeof (task.ContainerNo);
+                var strUndefined = 'undefined';
+                if (to === strUndefined) {
+                    return false;
+                } else {
+                    if (to.length > 0) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }                
+            };
             var checkEventOrder = function (task) {
                 for (var i = 0; i <= $scope.tasks.length - 1; i++) {
                     if ($scope.tasks[i].JobLineItemNo < task.JobLineItemNo && $scope.tasks[i].AllowSkipFlag != 'Y') {
@@ -367,7 +308,6 @@ angular.module('SysTodoList.controllers', [
                 }
                 return true;
             };
-
             $scope.slideDone = function (task, strDoneFlag) {
                 if (strDoneFlag === 'N') {
                     $state.go('detail', { 'ContainerNo': task.ContainerNo, 'JobNo': task.JobNo, 'JobLineItemNo': task.JobLineItemNo, 'LineItemNo': task.LineItemNo, 'Description': task.Description, 'Remark': task.Remark, 'DoneFlag': strDoneFlag });
@@ -414,62 +354,12 @@ angular.module('SysTodoList.controllers', [
                 }, 4500);
                 */
             };
-            /*
-            var setDoneFlag = function(JobNo,JobLineItemNo,LineItemNo,DoneDateTime,blnRefresh){
-                $ionicLoading.show();
-                var jsonData = { "JobNo":JobNo,"JobLineItemNo":JobLineItemNo,"LineItemNo":LineItemNo,"DoneFlag":"Y","DoneDatetime":DoneDateTime,"Remark":''};
-                var strUri = "/api/event/action/update/done";
-                var strKey = hex_md5(strBaseUrl + strUri + strSecretKey.replace(/-/ig,""));
-                $http({
-                    method: 'POST',
-                    url:    strWebServiceURL + strBaseUrl + strUri,
-                    data:   jsonData,
-                    headers: {
-                        "Signature": strKey
-                    }
-                }).success(function (data) {
-                    if (data.meta.code == 200) {
-                        if(blnRefresh){
-                            getTasks();
-                        }
-                    } else {
-                        $ionicLoading.hide();
-                        var alertPopup = $ionicPopup.alert({
-                            title: 'Update Event Status Failed.',
-                            okType: 'button-assertive'
-                        });
-                        $timeout(function() {
-                            alertPopup.close();
-                        }, 2500);
-                    }
-                }).error(function (data) {
-                    $ionicLoading.hide();
-                    var alertPopup = $ionicPopup.alert({
-                        title: 'Connect to WebService failed.',
-                        okType: 'button-assertive'
-                    });
-                    $timeout(function() {
-                        alertPopup.close();
-                    }, 2500);
-                });
-            }
-            */
-            /*
-            $scope.showDetail = function(task){
-                var JobNoContainerNo = 
-                navigator.notification.confirm('Task "' + task.Description + '" Completed ?', function(buttonIndex){
-                    if(buttonIndex == 1){
-                        setDoneFlag(task.JobNo, task.JobLineItemNo, task.LineItemNo, new Date(), true);
-                    }
-                }, task.ContainerNo, ['Done','Cancel']);
-            };
-            */
             getTasks();
         }])
 
     .controller('DetailCtrl',
-        ['$scope', '$stateParams', '$state', '$http', '$timeout', '$ionicLoading', '$ionicPopup',
-        function ($scope, $stateParams, $state, $http, $timeout, $ionicLoading, $ionicPopup) {
+        ['$scope', '$stateParams', '$state', '$http', '$timeout', '$ionicLoading', '$ionicPopup', 'JsonServiceClient',
+        function ($scope, $stateParams, $state, $http, $timeout, $ionicLoading, $ionicPopup, JsonServiceClient) {
             $scope.strContainerNo = $stateParams.ContainerNo;
             $scope.strJobNo = $stateParams.JobNo;
             $scope.strJobLineItemNo = $stateParams.JobLineItemNo;
@@ -491,7 +381,6 @@ angular.module('SysTodoList.controllers', [
             $scope.returnList = function () {
                 $state.go('list', { 'JobNo': $scope.strJobNo }, { reload: true });
             };
-
             $scope.update = function () {
                 $ionicLoading.show();
                 currentDate.setFullYear($scope.Update.datetime.getFullYear());
@@ -502,29 +391,11 @@ angular.module('SysTodoList.controllers', [
                 var jsonData = { "JobNo": $scope.strJobNo, "JobLineItemNo": $scope.strJobLineItemNo, "LineItemNo": $scope.strLineItemNo, "DoneFlag": $scope.strDoneFlag, "DoneDatetime": currentDate, "Remark": $scope.Update.remark };
                 var strUri = "/api/event/action/update/done";
                 var strKey = hex_md5(strBaseUrl + strUri + strSecretKey.replace(/-/ig, ""));
-                $http({
-                    method: 'POST',
-                    url: strWebServiceURL + strBaseUrl + strUri,
-                    data: jsonData,
-                    headers: {
-                        "Signature": strKey
-                    }
-                }).success(function (data) {
-                    if (data.meta.code == 200) {
-                        $ionicLoading.hide();
-                        $state.go('list', { 'JobNo': $scope.strJobNo }, { reload: true });
-                    } else {
-                        $ionicLoading.hide();
-                        var alertPopup = $ionicPopup.alert({
-                            title: 'Update Event Status Failed.',
-                            okType: 'button-assertive'
-                        });
-                        $timeout(function () {
-                            alertPopup.close();
-                            $state.go('list', { 'JobNo': $scope.strJobNo }, { reload: true });
-                        }, 2500);
-                    }
-                }).error(function (data) {
+                var onSuccess = function (response) {
+                    $ionicLoading.hide();
+                    $state.go('list', { 'JobNo': $scope.strJobNo }, { reload: true });
+                };
+                var onError = function () {
                     $ionicLoading.hide();
                     var alertPopup = $ionicPopup.alert({
                         title: 'Connect to WebService failed.',
@@ -534,24 +405,7 @@ angular.module('SysTodoList.controllers', [
                         alertPopup.close();
                         $state.go('list', { 'JobNo': $scope.strJobNo }, { reload: true });
                     }, 2500);
-                });
-            };
-            /*
-            $scope.pickDate = function () {
-                var options = {
-                    date: new Date(),
-                    mode: 'date', // or 'time'
-                    minDate: new Date() - 10000,
-                    allowOldDates: true,
-                    allowFutureDates: false,
-                    doneButtonLabel: 'DONE',
-                    doneButtonColor: '#F2F3F4',
-                    cancelButtonLabel: 'CANCEL',
-                    cancelButtonColor: '#000000'
                 };
-                $cordovaDatePicker.show(options).then(function(date){
-                    alert(date);
-                });
+                JsonServiceClient.postToService(strUri, jsonData, strKey, onSuccess, onError);
             };
-            */
         }])
