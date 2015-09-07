@@ -4,7 +4,7 @@ angular.module('SysTodoList.services', ['ionic'])
         if (!status) return { isSuccess: true };
         var result =
         {
-            isSuccess: status.meta.code === 200 || status.meta.errors.code != 0,
+            isSuccess: status.meta.code === 200, // && status.meta.errors.code === 0,
             errorCode: status.meta.errors.code,
             message: status.meta.message,
             data: status.data.results,
